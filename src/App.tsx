@@ -9,7 +9,7 @@ const WebSocketFileUploader = () => {
 
   useEffect(() => {
     // Establecer conexión con WebSocket
-    const ws = new WebSocket("wss://b854-2806-10be-4-3ae0-4444-726d-8d93-2ce6.ngrok-free.app/ws");
+    const ws = new WebSocket("wss://profound-viper-equal.ngrok-free.app/ws");
 
     ws.onopen = () => {
       console.log("Conectado al servidor WebSocket");
