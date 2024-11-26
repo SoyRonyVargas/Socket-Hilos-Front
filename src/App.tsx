@@ -23,7 +23,7 @@ const WebSocketFileUploader = () => {
 
       ws.onclose = () => {
         console.log("Conexión cerrada, intentando reconectar...");
-        setTimeout(() => connectWebSocket(), 5000); // Intentar reconectar en 5 segundos
+        setTimeout(() => connectWebSocket(), 1000); // Intentar reconectar en 5 segundos
       };
 
       ws.onerror = (error) => {
