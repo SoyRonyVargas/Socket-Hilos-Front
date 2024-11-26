@@ -67,9 +67,9 @@ const WebSocketFileUploader = () => {
         };
         reader.readAsArrayBuffer(file);
       });
-      alert("Archivos subidos con éxito");
+      console.log("Archivos subidos con éxito");
     } else {
-      alert("Por favor, seleccione archivos antes de subir.");
+      // alert("Por favor, seleccione archivos antes de subir.");
     }
   };
 
