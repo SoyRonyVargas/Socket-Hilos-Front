@@ -84,7 +84,7 @@ const WebSocketFileUploader = () => {
         if (currentTime === selectedTime) {
           handleFileUpload();
         }
-      }, 60000); // Verificar cada minuto
+      }, 1000); // Verificar cada minuto
 
       return () => clearInterval(interval);
     }
