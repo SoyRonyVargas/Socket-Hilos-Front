@@ -11,22 +11,24 @@ const WebSocketFileUploader = () => {
 
   useEffect(() => {
     const connectWebSocket = () => {
-      ws = new WebSocket("wss://1f90-2806-10be-4-3ae0-5dd2-b414-f148-c3f6.ngrok-free.app/ws");
+      ws = new WebSocket("wss://0c11-2806-10be-4-3ae0-5dd2-b414-f148-c3f6.ngrok-free.app/ws");
 
       ws.onopen = () => {
         console.log("Conectado al servidor WebSocket");
         setSocket(ws);
       };
 
-      ws.onmessage = (event:any) => {
+      ws.onmessage = async (event:any) => {
         setMessage(event.data);
         const receivedData = event.data;
         if (isValidURL(receivedData)) {
+          await new Promise((resolve) => setTimeout(resolve, 1000)); // Esperar 1 segundo
           downloadFile(receivedData);
         }
       };
 
       ws.onclose = () => {
+        alert("cerrado")
         console.log("Conexión cerrada, intentando reconectar...");
         setTimeout(() => connectWebSocket(), 1000); // Intentar reconectar en 5 segundos
       };
@@ -79,16 +81,23 @@ const WebSocketFileUploader = () => {
   const handleFileChange = (e:any) => setFiles(Array.from(e.target.files));
 
   const handleFileUpload = () => {
-    if (files.length > 0 && socket) {
-      files.forEach((file) => {
-        const reader = new FileReader();
-        reader.onload = () => {
+    files.forEach((file:any) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
           const arrayBuffer = reader.result;
           socket?.send(arrayBuffer); // Enviar archivo
-        };
-        reader.readAsArrayBuffer(file);
-      });
-    }
+          console.log(`Archivo enviado: ${file?.name}`);
+        } catch (err) {
+          console.error(`Error al enviar el archivo ${file.name}:`, err);
+        }
+      };
+      reader.onerror = () => {
+        console.error(`Error al leer el archivo ${file.name}:`, reader.error);
+      };
+      reader.readAsArrayBuffer(file);
+    });
+    
   };
 
   return (
