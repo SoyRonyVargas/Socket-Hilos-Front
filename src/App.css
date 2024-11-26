@@ -1,7 +1,7 @@
 .time {
     width: 120px; /* Ajusta el ancho según tus necesidades */
     height: 30px; /* Ajusta la altura según tus necesidades */
-    margin-bottom: 40px;
-    margin-top: 20px;/* Ajusta el margen inferior según tus necesidades */
-    /* Puedes agregar más estilos aquí si es necesario */
+    margin: 20px auto 40px auto; /* Centra el elemento horizontalmente */
 }
+
+
