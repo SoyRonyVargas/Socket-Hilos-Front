@@ -35,7 +35,7 @@ const WebSocketFileUploader = () => {
   };
 
   const connectWebSocket = () => {
-    ws = new WebSocket("wss://0c11-2806-10be-4-3ae0-5dd2-b414-f148-c3f6.ngrok-free.app/ws");
+    ws = new WebSocket("wss://bec3-148-230-247-220.ngrok-free.app/ws");
 
     ws.onopen = () => {
       console.log("Conectado al servidor WebSocket");
