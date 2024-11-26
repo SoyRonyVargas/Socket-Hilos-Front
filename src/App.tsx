@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import "./App.css";
+import { Context } from "./Context";
 
 const WebSocketFileUploader = () => {
   let ws: any;
@@ -9,6 +10,15 @@ const WebSocketFileUploader = () => {
   const [files, setFiles] = useState([]);
   const downloadQueue: string[] = [];
   let isDownloading = false;
+  const { flag  , handleFlag } = useContext(Context)
+
+  const [selectedTime, setSelectedTime] = useState<string>('');
+  
+
+  const handleTimeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSelectedTime(event.target.value);
+    console.log(event.target.value);
+  };  
 
   const processDownloadQueue = async () => {
     if (isDownloading || downloadQueue.length === 0) {
@@ -34,7 +44,7 @@ const WebSocketFileUploader = () => {
   };
 
   const connectWebSocket = () => {
-    ws = new WebSocket("wss://0c11-2806-10be-4-3ae0-5dd2-b414-f148-c3f6.ngrok-free.app/ws");
+    ws = new WebSocket("wss://bec3-148-230-247-220.ngrok-free.app/ws");
 
     ws.onopen = () => {
       console.log("Conectado al servidor WebSocket");
@@ -89,6 +99,24 @@ const WebSocketFileUploader = () => {
     };
   }, []);
 
+  useEffect(() => {
+    if (selectedTime) {
+      const interval = setInterval(() => {
+        const currentTime = new Date().toLocaleTimeString('en-GB', {
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+
+        if (currentTime === selectedTime && !flag) {
+          handleFileUpload();
+          // setSended(true);
+        }
+      }, 1000); // Verificar cada minuto
+
+      return () => clearInterval(interval);
+    }
+  }, [selectedTime , flag]);
+  
   const downloadFile = async (url: string) => {
     return new Promise<void>((resolve) => {
       const anchor = document.createElement("a");
@@ -109,6 +137,11 @@ const WebSocketFileUploader = () => {
   const handleFileChange = (e: any) => setFiles(Array.from(e.target.files));
 
   const handleFileUpload = () => {
+    
+    if(flag) {
+      return 
+    }
+    handleFlag();
     files.forEach((file: any) => {
       const reader = new FileReader();
       reader.onload = () => {
@@ -125,6 +158,7 @@ const WebSocketFileUploader = () => {
       };
       reader.readAsArrayBuffer(file);
     });
+    handleFlag();
   };
 
   return (
@@ -132,7 +166,13 @@ const WebSocketFileUploader = () => {
       <h1>WebSocket File Uploader</h1>
       <input type="file" multiple onChange={handleFileChange} />
       <button onClick={handleFileUpload} disabled={!files.length}>Subir archivos</button>
-      {message && <p>Mensaje del servidor: {message}</p>}
+      <input
+        className="time"
+        type="time"
+        onChange={handleTimeChange}
+      />
+      <br />
+      {message && <p>Mensaje del servidor: {message} flag: { flag ? "activo" : "no activo" } </p>}
     </div>
   );
 };
