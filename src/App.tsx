@@ -1,151 +1,74 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
 import "./App.css";
 
 const WebSocketFileUploader = () => {
-
-  const [socket, setSocket] = useState<any>(null);
-  const [message, setMessage] = useState<any>("");
-  const [files, setFiles] = useState<any>([]);
-  const [selectedTime, setSelectedTime] = useState<string>('');
-
+  let ws;
+  const [socket, setSocket] = useState(null);
+  const [message, setMessage] = useState("");
+  const [files, setFiles] = useState([]);
+  const [selectedTime, setSelectedTime] = useState("");
 
   useEffect(() => {
-    // Establecer conexión con WebSocket
-    const ws = new WebSocket("wss://1f90-2806-10be-4-3ae0-5dd2-b414-f148-c3f6.ngrok-free.app/ws",);
+    const connectWebSocket = () => {
+      ws = new WebSocket("wss://1f90-2806-10be-4-3ae0-5dd2-b414-f148-c3f6.ngrok-free.app/ws");
 
-    ws.onopen = () => {
-      console.log("Conectado al servidor WebSocket");
+      ws.onopen = () => {
+        console.log("Conectado al servidor WebSocket");
+        setSocket(ws);
+      };
+
+      ws.onmessage = (event) => {
+        setMessage(event.data);
+      };
+
+      ws.onclose = () => {
+        console.log("Conexión cerrada, intentando reconectar...");
+        setTimeout(() => connectWebSocket(), 5000); // Intentar reconectar en 5 segundos
+      };
+
+      ws.onerror = (error) => {
+        console.error("Error en WebSocket:", error);
+      };
     };
 
-    ws.onmessage = (event) => {
-      const receivedData = event.data;
-      setMessage(receivedData);
+    connectWebSocket();
 
-      // Verificar si el mensaje es una URL y descargar automáticamente
-      if (isValidURL(receivedData)) {
-        downloadFile(receivedData);
+    const keepAlive = setInterval(() => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: "ping" }));
+        console.log("Ping enviado");
       }
-    };
+    }, 1000); // Enviar ping cada 30 segundos
 
-    ws.onclose = () => {
-      console.log("Conexión cerrada");
-    };
-
-    ws.onerror = (error) => {
-      console.error("Error en el WebSocket:", error);
-    };
-
-    // Establecer el socket en el estado
-    setSocket(ws);
-
-    // Limpiar la conexión cuando el componente se desmonte
     return () => {
-      // if (ws) ws.close();
-      console.log("se desmonto el componente");
+      clearInterval(keepAlive);
+      ws.close();
     };
-
   }, []);
 
-  const handleFileChange = (e: any) => {
-    const selectedFiles = Array.from(e.target.files); // Convertir FileList a array
-    setFiles(selectedFiles); // Guardar todos los archivos seleccionados
-  };
-
-  const handleTimeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSelectedTime(event.target.value);
-    console.log(event.target.value);
-  };
-
+  const handleFileChange = (e) => setFiles(Array.from(e.target.files));
 
   const handleFileUpload = () => {
     if (files.length > 0 && socket) {
-      files.forEach((file: any) => {
+      files.forEach((file) => {
         const reader = new FileReader();
         reader.onload = () => {
           const arrayBuffer = reader.result;
-          socket?.send(arrayBuffer); // Enviar el archivo como un mensaje binario
-          console.log(`Archivo enviado: ${file.name}`);
+          socket.send(arrayBuffer); // Enviar archivo
         };
         reader.readAsArrayBuffer(file);
       });
-      console.log("Archivos subidos con éxito");
-    } else {
-      // alert("Por favor, seleccione archivos antes de subir.");
     }
   };
-
-  useEffect(() => {
-    if (selectedTime) {
-      const interval = setInterval(() => {
-        const currentTime = new Date().toLocaleTimeString('en-GB', {
-          hour: '2-digit',
-          minute: '2-digit',
-        });
-
-        if (currentTime === selectedTime) {
-          handleFileUpload();
-        }
-      }, 1000); // Verificar cada minuto
-
-      return () => clearInterval(interval);
-    }
-  }, [selectedTime]);
-
-  // Función para verificar si el mensaje recibido es una URL válida
-  const isValidURL = (url: any) => {
-    try {
-      new URL(url);
-      return true;
-    } catch {
-      return false;
-    }
-  };
-
-  // Función para descargar el archivo automáticamente
-  const downloadFile = (url: any) => {
-    const anchor = document.createElement("a");
-    anchor.href = url;
-
-    // Extraer el nombre del archivo desde la URL, si es posible
-    const fileName = url.split("/").pop();
-    anchor.download = fileName || "archivo"; // Nombre sugerido para la descarga
-
-    document.body.appendChild(anchor);
-    anchor.click(); // Simular el clic en el enlace
-    document.body.removeChild(anchor); // Eliminar el enlace del DOM
-    console.log(`Archivo descargado: ${fileName || url}`);
-  };
-
 
   return (
-    <div className="m-3">
-      <h1>Subir y descargar archivos a través de WebSocket</h1>
-
-      <input
-        className="form-control mb-4"
-        type="file"
-        multiple // Permitir selección múltiple
-        onChange={handleFileChange}
-      />
-      <input
-        className="time"
-        type="time"
-        onChange={handleTimeChange}
-      />
-      <br />
-      <button
-        className="btn btn-primary"
-        onClick={handleFileUpload}
-        disabled={files.length === 0}
-      >
-        Subir archivos
-      </button>
-
-      <h1>{message && <p>Mensaje del servidor: {message}</p>}</h1>
+    <div>
+      <h1>WebSocket File Uploader</h1>
+      <input type="file" multiple onChange={handleFileChange} />
+      <button onClick={handleFileUpload} disabled={!files.length}>Subir archivos</button>
+      {message && <p>Mensaje del servidor: {message}</p>}
     </div>
   );
 };
 
 export default WebSocketFileUploader;
-
