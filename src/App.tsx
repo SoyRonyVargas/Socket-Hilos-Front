@@ -1,11 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
+import "./App.css";
 
 const WebSocketFileUploader = () => {
-  
+
   const [socket, setSocket] = useState<any>(null);
   const [message, setMessage] = useState<any>("");
   const [files, setFiles] = useState<any>([]);
+  const [selectedTime, setSelectedTime] = useState<string>('');
+
 
   useEffect(() => {
     // Establecer conexión con WebSocket
@@ -42,14 +45,20 @@ const WebSocketFileUploader = () => {
     };
   }, []);
 
-  const handleFileChange = (e:any) => {
+  const handleFileChange = (e: any) => {
     const selectedFiles = Array.from(e.target.files); // Convertir FileList a array
     setFiles(selectedFiles); // Guardar todos los archivos seleccionados
   };
 
+  const handleTimeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSelectedTime(event.target.value);
+    console.log(event.target.value);
+  };
+
+
   const handleFileUpload = () => {
     if (files.length > 0 && socket) {
-      files.forEach((file:any) => {
+      files.forEach((file: any) => {
         const reader = new FileReader();
         reader.onload = () => {
           const arrayBuffer = reader.result;
@@ -64,31 +73,48 @@ const WebSocketFileUploader = () => {
     }
   };
 
+  useEffect(() => {
+    if (selectedTime) {
+      const interval = setInterval(() => {
+        const currentTime = new Date().toLocaleTimeString('en-GB', {
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+
+        if (currentTime === selectedTime) {
+          handleFileUpload();
+        }
+      }, 60000); // Verificar cada minuto
+
+      return () => clearInterval(interval);
+    }
+  }, [selectedTime]);
+
   // Función para verificar si el mensaje recibido es una URL válida
-  const isValidURL = (url:any) => {
+  const isValidURL = (url: any) => {
     try {
       new URL(url);
       return true;
-    } catch{
+    } catch {
       return false;
     }
   };
 
   // Función para descargar el archivo automáticamente
-  const downloadFile = (url:any) => {
+  const downloadFile = (url: any) => {
     const anchor = document.createElement("a");
     anchor.href = url;
-  
+
     // Extraer el nombre del archivo desde la URL, si es posible
     const fileName = url.split("/").pop();
     anchor.download = fileName || "archivo"; // Nombre sugerido para la descarga
-  
+
     document.body.appendChild(anchor);
     anchor.click(); // Simular el clic en el enlace
     document.body.removeChild(anchor); // Eliminar el enlace del DOM
     console.log(`Archivo descargado: ${fileName || url}`);
   };
-  
+
 
   return (
     <div className="m-3">
@@ -100,7 +126,12 @@ const WebSocketFileUploader = () => {
         multiple // Permitir selección múltiple
         onChange={handleFileChange}
       />
-
+      <input
+        className="time"
+        type="time"
+        onChange={handleTimeChange}
+      />
+      <br />
       <button
         className="btn btn-primary"
         onClick={handleFileUpload}
@@ -115,3 +146,4 @@ const WebSocketFileUploader = () => {
 };
 
 export default WebSocketFileUploader;
+
