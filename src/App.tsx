@@ -8,6 +8,7 @@ const WebSocketFileUploader = () => {
   const [message, setMessage] = useState("");
   const [files, setFiles] = useState([]);
   const downloadQueue: string[] = [];
+  const [time, setTime] = useState('');
   let isDownloading = false;
 
   const processDownloadQueue = async () => {
@@ -45,7 +46,7 @@ const WebSocketFileUploader = () => {
       setMessage(event.data);
       const receivedData = event.data;
       console.log("Datos recibidos:", receivedData);
-      
+
       if (isValidURL(receivedData)) {
         enqueueDownload(receivedData);
       }
@@ -70,7 +71,7 @@ const WebSocketFileUploader = () => {
       return false;
     }
   };
-  
+
   useEffect(() => {
     connectWebSocket();
 
@@ -106,6 +107,17 @@ const WebSocketFileUploader = () => {
     });
   };
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = new Date();
+      const formattedTime = now.toTimeString().slice(0, 5);
+      setTime(formattedTime);
+      handleFileUpload();
+    }, 1000); // Actualiza cada minuto
+
+    return () => clearInterval(interval);
+  }, []);
+
   const handleFileChange = (e: any) => setFiles(Array.from(e.target.files));
 
   const handleFileUpload = () => {
@@ -130,7 +142,15 @@ const WebSocketFileUploader = () => {
   return (
     <div>
       <h1>WebSocket File Uploader</h1>
-      <input type="file" multiple onChange={handleFileChange} />
+      <input className="files" type="file" multiple onChange={handleFileChange} />
+      <br />
+      <input
+        className="time"
+        type="time"
+        value={time}
+        onChange={(e) => setTime(e.target.value)}
+      />
+      <br />
       <button onClick={handleFileUpload} disabled={!files.length}>Subir archivos</button>
       {message && <p>Mensaje del servidor: {message}</p>}
     </div>
