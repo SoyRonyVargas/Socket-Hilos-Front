@@ -3,74 +3,85 @@ import { useState, useEffect } from "react";
 import "./App.css";
 
 const WebSocketFileUploader = () => {
-  let ws:any;
+  let ws: any;
   const [socket, setSocket] = useState<any>(null);
   const [message, setMessage] = useState("");
   const [files, setFiles] = useState([]);
-  // const [selectedTime, setSelectedTime] 0= useState<any>("");
+  const downloadQueue: string[] = [];
+  let isDownloading = false;
 
-  useEffect(() => {
-    const connectWebSocket = () => {
-      ws = new WebSocket("wss://0c11-2806-10be-4-3ae0-5dd2-b414-f148-c3f6.ngrok-free.app/ws");
+  const processDownloadQueue = async () => {
+    if (isDownloading || downloadQueue.length === 0) {
+      return;
+    }
 
-      ws.onopen = () => {
-        console.log("Conectado al servidor WebSocket");
-        setSocket(ws);
-      };
+    isDownloading = true;
 
-      ws.onmessage = async (event:any) => {
-        setMessage(event.data);
-        const receivedData = event.data;
-        if (isValidURL(receivedData)) {
-          await new Promise((resolve) => setTimeout(resolve, 1000)); // Esperar 1 segundo
-          downloadFile(receivedData);
-        }
-      };
+    while (downloadQueue.length > 0) {
+      const url = downloadQueue.shift(); // Obtener el primer elemento de la cola
+      if (url) {
+        await downloadFile(url); // Descargar el archivo
+      }
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // Pausa entre descargas
+    }
 
-      ws.onclose = () => {
-        alert("cerrado")
-        console.log("Conexión cerrada, intentando reconectar...");
-        setTimeout(() => connectWebSocket(), 1000); // Intentar reconectar en 5 segundos
-      };
+    isDownloading = false;
+  };
 
-      ws.onerror = (error:any) => {
-        console.error("Error en WebSocket:", error);
-      };
+  const enqueueDownload = (url: string) => {
+    downloadQueue.push(url);
+    processDownloadQueue();
+  };
+
+  const connectWebSocket = () => {
+    ws = new WebSocket("wss://0c11-2806-10be-4-3ae0-5dd2-b414-f148-c3f6.ngrok-free.app/ws");
+
+    ws.onopen = () => {
+      console.log("Conectado al servidor WebSocket");
+      setSocket(ws);
     };
 
-    connectWebSocket();
-
-    const isValidURL = (url: any) => {
-      try {
-        new URL(url);
-        return true;
-      } catch {
-        return false;
+    ws.onmessage = (event: any) => {
+      setMessage(event.data);
+      const receivedData = event.data;
+      console.log("Datos recibidos:", receivedData);
+      
+      if (isValidURL(receivedData)) {
+        enqueueDownload(receivedData);
       }
     };
-  
-    // Función para descargar el archivo automáticamente
-    const downloadFile = (url: any) => {
-      const anchor = document.createElement("a");
-      anchor.href = url;
-  
-      // Extraer el nombre del archivo desde la URL, si es posible
-      const fileName = url.split("/").pop();
-      anchor.download = fileName || "archivo"; // Nombre sugerido para la descarga
-  
-      document.body.appendChild(anchor);
-      anchor.click(); // Simular el clic en el enlace
-      document.body.removeChild(anchor); // Eliminar el enlace del DOM
-      console.log(`Archivo descargado: ${fileName || url}`);
-    };
-  
 
+    ws.onclose = () => {
+      alert("Conexión cerrada");
+      console.log("Conexión cerrada, intentando reconectar...");
+      setTimeout(() => connectWebSocket(), 1000); // Intentar reconectar en 5 segundos
+    };
+
+    ws.onerror = (error: any) => {
+      console.error("Error en WebSocket:", error);
+    };
+  };
+
+  const isValidURL = (url: any) => {
+    try {
+      new URL(url);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  
+  useEffect(() => {
+    connectWebSocket();
+
+
+    // Mantener conexión WebSocket activa
     const keepAlive = setInterval(() => {
       if (ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({ type: "ping" }));
         console.log("Ping enviado");
       }
-    }, 1000); // Enviar ping cada 30 segundos
+    }, 1000); // Enviar ping cada 1 segundo
 
     return () => {
       clearInterval(keepAlive);
@@ -78,10 +89,27 @@ const WebSocketFileUploader = () => {
     };
   }, []);
 
-  const handleFileChange = (e:any) => setFiles(Array.from(e.target.files));
+  const downloadFile = async (url: string) => {
+    return new Promise<void>((resolve) => {
+      const anchor = document.createElement("a");
+      anchor.href = url;
+
+      // Extraer el nombre del archivo desde la URL
+      const fileName = url.split("/").pop();
+      anchor.download = fileName || "archivo"; // Nombre sugerido para la descarga
+
+      document.body.appendChild(anchor);
+      anchor.click(); // Simular el clic en el enlace
+      document.body.removeChild(anchor); // Eliminar el enlace del DOM
+      console.log(`Archivo descargado: ${fileName || url}`);
+      resolve();
+    });
+  };
+
+  const handleFileChange = (e: any) => setFiles(Array.from(e.target.files));
 
   const handleFileUpload = () => {
-    files.forEach((file:any) => {
+    files.forEach((file: any) => {
       const reader = new FileReader();
       reader.onload = () => {
         try {
@@ -97,7 +125,6 @@ const WebSocketFileUploader = () => {
       };
       reader.readAsArrayBuffer(file);
     });
-    
   };
 
   return (
