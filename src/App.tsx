@@ -20,6 +20,10 @@ const WebSocketFileUploader = () => {
 
       ws.onmessage = (event:any) => {
         setMessage(event.data);
+        const receivedData = event.data;
+        if (isValidURL(receivedData)) {
+          downloadFile(receivedData);
+        }
       };
 
       ws.onclose = () => {
@@ -33,6 +37,31 @@ const WebSocketFileUploader = () => {
     };
 
     connectWebSocket();
+
+    const isValidURL = (url: any) => {
+      try {
+        new URL(url);
+        return true;
+      } catch {
+        return false;
+      }
+    };
+  
+    // Función para descargar el archivo automáticamente
+    const downloadFile = (url: any) => {
+      const anchor = document.createElement("a");
+      anchor.href = url;
+  
+      // Extraer el nombre del archivo desde la URL, si es posible
+      const fileName = url.split("/").pop();
+      anchor.download = fileName || "archivo"; // Nombre sugerido para la descarga
+  
+      document.body.appendChild(anchor);
+      anchor.click(); // Simular el clic en el enlace
+      document.body.removeChild(anchor); // Eliminar el enlace del DOM
+      console.log(`Archivo descargado: ${fileName || url}`);
+    };
+  
 
     const keepAlive = setInterval(() => {
       if (ws.readyState === WebSocket.OPEN) {
