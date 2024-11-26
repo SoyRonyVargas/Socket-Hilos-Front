@@ -1,12 +1,13 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
 import "./App.css";
 
 const WebSocketFileUploader = () => {
-  let ws;
-  const [socket, setSocket] = useState(null);
+  let ws:any;
+  const [socket, setSocket] = useState<any>(null);
   const [message, setMessage] = useState("");
   const [files, setFiles] = useState([]);
-  const [selectedTime, setSelectedTime] = useState("");
+  // const [selectedTime, setSelectedTime] 0= useState<any>("");
 
   useEffect(() => {
     const connectWebSocket = () => {
@@ -17,7 +18,7 @@ const WebSocketFileUploader = () => {
         setSocket(ws);
       };
 
-      ws.onmessage = (event) => {
+      ws.onmessage = (event:any) => {
         setMessage(event.data);
       };
 
@@ -26,7 +27,7 @@ const WebSocketFileUploader = () => {
         setTimeout(() => connectWebSocket(), 1000); // Intentar reconectar en 5 segundos
       };
 
-      ws.onerror = (error) => {
+      ws.onerror = (error:any) => {
         console.error("Error en WebSocket:", error);
       };
     };
@@ -46,7 +47,7 @@ const WebSocketFileUploader = () => {
     };
   }, []);
 
-  const handleFileChange = (e) => setFiles(Array.from(e.target.files));
+  const handleFileChange = (e:any) => setFiles(Array.from(e.target.files));
 
   const handleFileUpload = () => {
     if (files.length > 0 && socket) {
@@ -54,7 +55,7 @@ const WebSocketFileUploader = () => {
         const reader = new FileReader();
         reader.onload = () => {
           const arrayBuffer = reader.result;
-          socket.send(arrayBuffer); // Enviar archivo
+          socket?.send(arrayBuffer); // Enviar archivo
         };
         reader.readAsArrayBuffer(file);
       });
